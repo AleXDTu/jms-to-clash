@@ -1,0 +1,17 @@
+node_modules/
+*.log
+
+# 敏感文件，只存在于本地/服务器，绝不入库
+tokens.txt
+tokens.txt.bak
+ecosystem.config.js
+scripts/deploy.env
+
+# 个人部署信息（真实 IP/域名等），公开仓库只保留通用版
+docs/*.local.md
+
+# 会话产生的计划/本地文件
+.zcode/
+
+*.bak.*
+.DS_Store
