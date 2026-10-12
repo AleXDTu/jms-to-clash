@@ -96,9 +96,11 @@ console.log('createAlerter 去重 / 升级 / 恢复');
   const mk = (srv) => (s, id) => `http://127.0.0.1:${srv.address().port}/getbwcounter.php?service=${s}&id=${id}`;
   const hookUrl = `http://127.0.0.1:${hookServer.address().port}/push/{title}/{body}`;
 
+  // 到期日相对当前时间生成，避免硬编码日期随真实时钟过期
+  const EXPIRES = new Date(Date.now() + 6 * 86400000).toISOString().slice(0, 10);
   const m = startMonitoring({
     service: 1, id: 'k',
-    expires: '2026-08-30',
+    expires: EXPIRES,
     webhookUrl: hookUrl,
     warnPct: 5,           // 100/1000=10% > 5%，首轮即触发 warn
     intervalMinutes: 60,
@@ -110,7 +112,7 @@ console.log('createAlerter 去重 / 升级 / 恢复');
   let st = m.status();
   assert.equal(st.traffic.level, 'warn', '首轮检查后 traffic=warn');
   assert.equal(st.traffic.usedGb, '0.00');
-  assert.equal(st.expiry.level, 'imminent', '2026-08-30 距 08-24 为 6 天 → imminent');
+  assert.equal(st.expiry.level, 'imminent', `到期日 ${EXPIRES}（6 天后）→ imminent`);
   assert.equal(st.subscription.consecutiveFailures, 0);
   assert.ok(hooks.some(h => h.includes('流量')), '流量告警已推送到 webhook');
   assert.ok(hooks.some(h => h.includes('到期')), '到期告警已推送到 webhook');
@@ -137,7 +139,7 @@ console.log('createAlerter 去重 / 升级 / 恢复');
   const expireHeader = m.getUserinfoHeader();
   assert.match(expireHeader, /^upload=0; download=\d+; total=\d+; expire=\d{10}$/, '带 expire 为 Unix 秒');
   const expireTs = Number(expireHeader.split('expire=')[1]);
-  assert.equal(new Date(expireTs * 1000).toISOString().slice(0, 10), '2026-08-30', 'expire 对应到期日当天');
+  assert.equal(new Date(expireTs * 1000).toISOString().slice(0, 10), EXPIRES, 'expire 对应到期日当天');
   const fresh = startMonitoring({ service: 2, id: 'x', urls: { primary: mk(apiServer) } });
   assert.equal(fresh.getUserinfoHeader(), null, '尚无数据时返回 null');
   fresh.stop();
